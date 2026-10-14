@@ -1,0 +1,307 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luta de Cria 🇧🇷</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #101014;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+h1 {
+  color: #ffe600;
+  text-shadow: 3px 3px #087b36;
+}
+
+.arena {
+  max-width: 850px;
+  margin: 20px auto;
+  padding: 15px;
+  background: linear-gradient(#222244, #111119);
+  border: 3px solid #ffe600;
+  border-radius: 15px;
+}
+
+.players {
+  display: flex;
+  justify-content: space-around;
+  gap: 15px;
+}
+
+.player { width: 45%; }
+
+.health {
+  height: 24px;
+  background: #555;
+  border: 2px solid white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  width: 100%;
+  background: #27e35b;
+  transition: width .25s;
+}
+
+.fighter {
+  font-size: clamp(65px, 15vw, 110px);
+  margin: 15px 0;
+  transition: transform .15s;
+}
+
+.hit {
+  transform: rotate(-15deg) scale(1.2);
+}
+
+#stage {
+  background: linear-gradient(#34345e 60%, #386b28 60%);
+  border-radius: 12px;
+  margin-top: 15px;
+  padding: 15px;
+}
+
+#message {
+  min-height: 48px;
+  color: #ffe600;
+  font-weight: bold;
+  font-size: 18px;
+  margin: 10px;
+}
+
+button {
+  background: #ffe600;
+  color: #111;
+  font-size: 16px;
+  font-weight: bold;
+  border: 0;
+  border-radius: 10px;
+  padding: 13px;
+  margin: 5px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:hover { background: #ffad00; }
+button:disabled { opacity: .4; }
+
+.controls { margin: 15px auto; }
+
+#restart { background: #24e56b; }
+
+small { color: #bbb; }
+
+@media (max-width: 500px) {
+  .arena { margin: 10px; padding: 8px; }
+  button { padding: 12px 10px; }
+}
+</style>
+</head>
+<body>
+
+<h1>🥊 LUTA DE CRIA 🇧🇷</h1>
+<p>O último round da calçada!</p>
+
+<div class="arena">
+  <div class="players">
+    <div class="player">
+      <h3>😎 VOCÊ</h3>
+      <div class="health">
+        <div id="hp1" class="bar"></div>
+      </div>
+      <div id="fighter1" class="fighter">🕺</div>
+      <b id="life1">100 HP</b>
+    </div>
+
+    <div class="player">
+      <h3>🗿 CALABRESO</h3>
+      <div class="health">
+        <div id="hp2" class="bar"></div>
+      </div>
+      <div id="fighter2" class="fighter">🗿</div>
+      <b id="life2">100 HP</b>
+    </div>
+  </div>
+
+  <div id="stage">
+    <div id="message">🔥 VALENDO! Escolha seu golpe!</div>
+    <div class="controls">
+      <button onclick="attack('soco')">👊 Soco</button>
+      <button onclick="attack('chute')">🦵 Chute</button>
+      <button onclick="attack('especial')">⚡ Especial</button>
+      <button onclick="defend()">🛡️ Defender</button>
+    </div>
+    <button id="restart" onclick="resetGame()">🔄 Revanche</button>
+  </div>
+</div>
+
+<p><small>Feito na base do ódio e do pão com mortadela.</small></p>
+
+<script>
+let playerHP = 100;
+let enemyHP = 100;
+let defending = false;
+let gameOver = false;
+let specialReady = true;
+
+const $ = id => document.getElementById(id);
+
+const memes = {
+  soco: [
+    "TOMA, CALABRESO! 👊",
+    "O PIX DO SOCO CAIU! 💸",
+    "QUE ISSO, MEU FILHO, CALMA! 😂"
+  ],
+  chute: [
+    "CHUTE DE MIL GRAU! 🦵",
+    "FOI DE BASE! 💀",
+    "A CALÇADA TREMEU! 🇧🇷"
+  ],
+  especial: [
+    "É O PODER DO PIX! ⚡",
+    "LÁ ELE! ATAQUE SUPREMO! 💥",
+    "O BRASIL NÃO É PARA AMADORES! 🇧🇷"
+  ]
+};
+
+function updateUI() {
+  $("hp1").style.width = playerHP + "%";
+  $("hp2").style.width = enemyHP + "%";
+  $("life1").textContent = playerHP + " HP";
+  $("life2").textContent = enemyHP + " HP";
+
+  $("hp1").style.background =
+    playerHP < 30 ? "#ff3333" : "#27e35b";
+  $("hp2").style.background =
+    enemyHP < 30 ? "#ff3333" : "#27e35b";
+}
+
+function say(text) {
+  $("message").textContent = text;
+}
+
+function animate(id) {
+  const el = $(id);
+  el.classList.add("hit");
+  setTimeout(() => el.classList.remove("hit"), 180);
+}
+
+function finish() {
+  if (playerHP <= 0) {
+    playerHP = 0;
+    gameOver = true;
+    say("💀 VOCÊ FOI DE ARRASTA! O CALABRESO VENCEU!");
+  } else if (enemyHP <= 0) {
+    enemyHP = 0;
+    gameOver = true;
+    say("🏆 VOCÊ AMASSOU O CALABRESO! É O BRASIL!");
+  }
+
+  updateUI();
+
+  if (gameOver) {
+    document.querySelectorAll(".controls button")
+      .forEach(button => button.disabled = true);
+  }
+
+  return gameOver;
+}
+
+function attack(type) {
+  if (gameOver) return;
+
+  let damage;
+
+  if (type === "especial") {
+    if (!specialReady) {
+      say("⚠️ Especial recarregando! Vai de soco ou chute!");
+      return;
+    }
+    damage = 30 + Math.floor(Math.random() * 16);
+    specialReady = false;
+    setTimeout(() => {
+      specialReady = true;
+      if (!gameOver) say("⚡ Especial carregado novamente!");
+    }, 4000);
+  } else if (type === "chute") {
+    damage = 15 + Math.floor(Math.random() * 16);
+  } else {
+    damage = 8 + Math.floor(Math.random() * 13);
+  }
+
+  enemyHP = Math.max(0, enemyHP - damage);
+  animate("fighter2");
+
+  const frases = memes[type];
+  say(frases[Math.floor(Math.random() * frases.length)]
+      + " -" + damage + " HP!");
+
+  updateUI();
+
+  if (finish()) return;
+
+  setTimeout(enemyTurn, 650);
+}
+
+function defend() {
+  if (gameOver) return;
+
+  defending = true;
+  say("🛡️ VOCÊ FECHOU A GUARDA! Segura essa!");
+  setTimeout(enemyTurn, 500);
+}
+
+function enemyTurn() {
+  if (gameOver) return;
+
+  const damage = 8 + Math.floor(Math.random() * 16);
+  const actualDamage = defending
+    ? Math.floor(damage * 0.25)
+    : damage;
+
+  playerHP = Math.max(0, playerHP - actualDamage);
+  defending = false;
+
+  animate("fighter1");
+
+  const phrases = [
+    "🗿 CALABRESO MANDOU A BRABA!",
+    "💀 TOMOU NA TESTA!",
+    "😂 O CALABRESO NÃO PERDOA!",
+    "🇧🇷 SOCO DE RESPEITO!"
+  ];
+
+  say(phrases[Math.floor(Math.random() * phrases.length)]
+      + " -" + actualDamage + " HP!");
+
+  updateUI();
+  finish();
+}
+
+function resetGame() {
+  playerHP = 100;
+  enemyHP = 100;
+  defending = false;
+  gameOver = false;
+  specialReady = true;
+
+  document.querySelectorAll(".controls button")
+    .forEach(button => button.disabled = false);
+
+  say("🔥 REVANCHE! AGORA É PESSOAL!");
+  updateUI();
+}
+
+updateUI();
+</script>
+</body>
+</html>
